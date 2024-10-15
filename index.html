@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barcode Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      :root {
+        --primary-color: 211, 100%, 50%; /* hsl(211, 100%, 50%) */
+        --danger-color: 354, 70%, 54%; /* hsl(354, 70%, 54%) */
+        --success-color: 134, 61%, 41%; /* hsl(134, 61%, 41%) */
+        --warning-color: 45, 100%, 51%; /* hsl(45, 100%, 51%) */
+        --info-color: 188, 78%, 41%; /* hsl(188, 78%, 41%) */
+        --light-color: 210, 17%, 98%; /* hsl(210, 17%, 98%) */
+        --dark-color: 210, 10%, 23%; /* hsl(210, 10%, 23%) */
+      }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      button {
+        padding: 10px;
+        color: white;
+        background-color: gray;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      #inputContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .input-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      input {
+        padding: 5px;
+        font-size: 16px;
+        flex-grow: 1;
+      }
+      #removeButton {
+        background-color: hsla(var(--danger-color), 0.8);
+      }
+      #exportButton {
+        background-color: hsla(var(--success-color), 0.8);
+      }
+      #manuallyButton {
+        background-color: hsla(var(--info-color), 0.8);
+      }
+      #exportButton:hover {
+        background-color: hsla(var(--success-color), 0.6);
+      }
+      #manuallyButton:hover {
+        background-color: hsla(var(--info-color), 0.6);
+      }
+      #removeButton:hover {
+        background-color: hsla(var(--danger-color), 0.6);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Barcode Scanner</h1>
+    <div style="display: flex; gap: 5px; align-items: center">
+      <button id="exportButton">Export to Excel</button>
+      <button id="manuallyButton">Add Manually</button>
+    </div>
+    <div id="inputContainer"></div>
+
+    <script>
+      const inputContainer = document.getElementById("inputContainer")
+      const exportButton = document.getElementById("exportButton")
+      const manuallyButton = document.getElementById("manuallyButton")
+      let inputCount = 0
+
+      function createInput(type = "auto") {
+        const inputGroup = document.createElement("div")
+        inputGroup.className = "input-group"
+
+        const order = document.createElement("span")
+        order.style.fontWeight = "bold"
+        order.textContent = `${++inputCount}.`
+
+        const input = document.createElement("input")
+        input.type = "text"
+        input.placeholder = `Input ${inputCount}`
+
+        if (type === "manual") {
+          input.addEventListener("input", saveToLocalStorage)
+          input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") createInput("manual")
+          })
+        } else {
+          input.addEventListener("input", _.debounce(handleAutoInput, 300))
+        }
+
+        const removeButton = document.createElement("button")
+        removeButton.textContent = "Remove"
+        removeButton.id = "removeButton"
+        removeButton.addEventListener("click", () => removeInput(inputGroup))
+
+        inputGroup.append(order, input, removeButton)
+        inputContainer.appendChild(inputGroup)
+        input.focus()
+
+        return input
+      }
+
+      function handleAutoInput(event) {
+        if (event.target.value) {
+          saveToLocalStorage()
+          createInput()
+        }
+      }
+
+      function removeInput(inputGroup) {
+        inputGroup.remove()
+        saveToLocalStorage()
+        updateInputOrder()
+      }
+
+      function updateInputOrder() {
+        inputContainer
+          .querySelectorAll(".input-group")
+          .forEach((group, index) => {
+            const span = group.querySelector("span")
+            const input = group.querySelector("input")
+            span.textContent = `${index + 1}.`
+            input.placeholder = `Input ${index + 1}`
+          })
+        inputCount = inputContainer.children.length
+      }
+
+      function saveToLocalStorage() {
+        const values = Array.from(inputContainer.querySelectorAll("input")).map(
+          (input) => input.value
+        )
+        localStorage.setItem("inputValues", JSON.stringify(values))
+      }
+
+      function loadFromLocalStorage() {
+        inputContainer.innerHTML = ""
+        const storedValues =
+          JSON.parse(localStorage.getItem("inputValues")) || []
+        storedValues.forEach((value) => {
+          const input = createInput()
+          input.value = value
+        })
+        if (storedValues.length === 0) {
+          createInput()
+        }
+      }
+
+      function exportToExcel() {
+        const values = Array.from(inputContainer.querySelectorAll("input")).map(
+          (input) => [input.value]
+        )
+        const wb = XLSX.utils.book_new()
+        const ws = XLSX.utils.aoa_to_sheet(values)
+        XLSX.utils.book_append_sheet(wb, ws, "Inputs")
+        XLSX.writeFile(wb, "input_values.xlsx")
+      }
+
+      manuallyButton.addEventListener("click", () => createInput("manual"))
+      exportButton.addEventListener("click", exportToExcel)
+
+      loadFromLocalStorage()
+    </script>
+  </body>
+</html>
