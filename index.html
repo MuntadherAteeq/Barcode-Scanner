@@ -67,6 +67,9 @@
     </style>
   </head>
   <body>
+    <header>
+      Develop by <a href="https://github.com/MuntadherAteeq">Muntadher</a>
+    </header>
     <h1>Barcode Scanner</h1>
     <div style="display: flex; gap: 5px; align-items: center">
       <button id="exportButton">Export to Excel</button>
@@ -75,103 +78,103 @@
     <div id="inputContainer"></div>
 
     <script>
-      const inputContainer = document.getElementById("inputContainer")
-      const exportButton = document.getElementById("exportButton")
-      const manuallyButton = document.getElementById("manuallyButton")
-      let inputCount = 0
+      const inputContainer = document.getElementById("inputContainer");
+      const exportButton = document.getElementById("exportButton");
+      const manuallyButton = document.getElementById("manuallyButton");
+      let inputCount = 0;
 
       function createInput(type = "auto") {
-        const inputGroup = document.createElement("div")
-        inputGroup.className = "input-group"
+        const inputGroup = document.createElement("div");
+        inputGroup.className = "input-group";
 
-        const order = document.createElement("span")
-        order.style.fontWeight = "bold"
-        order.textContent = `${++inputCount}.`
+        const order = document.createElement("span");
+        order.style.fontWeight = "bold";
+        order.textContent = `${++inputCount}.`;
 
-        const input = document.createElement("input")
-        input.type = "text"
-        input.placeholder = `Input ${inputCount}`
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = `Input ${inputCount}`;
 
         if (type === "manual") {
-          input.addEventListener("input", saveToLocalStorage)
+          input.addEventListener("input", saveToLocalStorage);
           input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") createInput("manual")
-          })
+            if (event.key === "Enter") createInput("manual");
+          });
         } else {
-          input.addEventListener("input", _.debounce(handleAutoInput, 300))
+          input.addEventListener("input", _.debounce(handleAutoInput, 300));
         }
 
-        const removeButton = document.createElement("button")
-        removeButton.textContent = "Remove"
-        removeButton.id = "removeButton"
-        removeButton.addEventListener("click", () => removeInput(inputGroup))
+        const removeButton = document.createElement("button");
+        removeButton.textContent = "Remove";
+        removeButton.id = "removeButton";
+        removeButton.addEventListener("click", () => removeInput(inputGroup));
 
-        inputGroup.append(order, input, removeButton)
-        inputContainer.appendChild(inputGroup)
-        input.focus()
+        inputGroup.append(order, input, removeButton);
+        inputContainer.appendChild(inputGroup);
+        input.focus();
 
-        return input
+        return input;
       }
 
       function handleAutoInput(event) {
         if (event.target.value) {
-          saveToLocalStorage()
-          createInput()
+          saveToLocalStorage();
+          createInput();
         }
       }
 
       function removeInput(inputGroup) {
-        inputGroup.remove()
-        saveToLocalStorage()
-        updateInputOrder()
+        inputGroup.remove();
+        saveToLocalStorage();
+        updateInputOrder();
       }
 
       function updateInputOrder() {
         inputContainer
           .querySelectorAll(".input-group")
           .forEach((group, index) => {
-            const span = group.querySelector("span")
-            const input = group.querySelector("input")
-            span.textContent = `${index + 1}.`
-            input.placeholder = `Input ${index + 1}`
-          })
-        inputCount = inputContainer.children.length
+            const span = group.querySelector("span");
+            const input = group.querySelector("input");
+            span.textContent = `${index + 1}.`;
+            input.placeholder = `Input ${index + 1}`;
+          });
+        inputCount = inputContainer.children.length;
       }
 
       function saveToLocalStorage() {
         const values = Array.from(inputContainer.querySelectorAll("input")).map(
           (input) => input.value
-        )
-        localStorage.setItem("inputValues", JSON.stringify(values))
+        );
+        localStorage.setItem("inputValues", JSON.stringify(values));
       }
 
       function loadFromLocalStorage() {
-        inputContainer.innerHTML = ""
+        inputContainer.innerHTML = "";
         const storedValues =
-          JSON.parse(localStorage.getItem("inputValues")) || []
+          JSON.parse(localStorage.getItem("inputValues")) || [];
         storedValues.forEach((value) => {
-          const input = createInput()
-          input.value = value
-        })
+          const input = createInput();
+          input.value = value;
+        });
         if (storedValues.length === 0) {
-          createInput()
+          createInput();
         }
       }
 
       function exportToExcel() {
         const values = Array.from(inputContainer.querySelectorAll("input")).map(
           (input) => [input.value]
-        )
-        const wb = XLSX.utils.book_new()
-        const ws = XLSX.utils.aoa_to_sheet(values)
-        XLSX.utils.book_append_sheet(wb, ws, "Inputs")
-        XLSX.writeFile(wb, "input_values.xlsx")
+        );
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(values);
+        XLSX.utils.book_append_sheet(wb, ws, "Inputs");
+        XLSX.writeFile(wb, "input_values.xlsx");
       }
 
-      manuallyButton.addEventListener("click", () => createInput("manual"))
-      exportButton.addEventListener("click", exportToExcel)
+      manuallyButton.addEventListener("click", () => createInput("manual"));
+      exportButton.addEventListener("click", exportToExcel);
 
-      loadFromLocalStorage()
+      loadFromLocalStorage();
     </script>
   </body>
 </html>
